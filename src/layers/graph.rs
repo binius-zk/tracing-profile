@@ -46,6 +46,12 @@ pub struct Config {
     /// Corresponds to the `TREE_LAYER_ACCUMULATE_SPANS_COUNT` environment variable.
     pub accumulate_spans_count: bool,
 
+    /// EXPERIMENTAL:
+    /// If enabled, similar sibling nodes will be aggregated together.
+    /// In essence spans that share name, fields and children will be merged together.
+    /// This means that the start+end time will be wrong but the durations are summed.
+    pub aggregate_similar_siblings: bool,
+
     /// Whether to disable color output.
     /// Corresponds to the `NO_COLOR` environment variable.
     pub no_color: bool,
@@ -60,6 +66,7 @@ impl Config {
             display_unaccounted: get_env_var("TREE_LAYER_DISPLAY_", false),
             accumulate_events: get_bool_env_var("TREE_LAYER_ACCUMULATE_EVENTS", true),
             accumulate_spans_count: get_bool_env_var("TREE_LAYER_ACCUMULATE_SPANS_COUNT", false),
+            aggregate_similar_siblings: get_bool_env_var("TREE_LAYER_ACCUMULATE_SIBLINGS", false),
             no_color: get_bool_env_var("NO_COLOR", false),
         }
     }
@@ -165,7 +172,7 @@ where
         &self,
         attrs: &span::Attributes<'_>,
         id: &span::Id,
-        _ctx: tracing_subscriber::layer::Context<'_, S>,
+        ctx: tracing_subscriber::layer::Context<'_, S>,
     ) {
         if !self.is_main_thread() {
             return;
@@ -181,6 +188,8 @@ where
         let Ok(mut state) = self.state.lock() else {
             return err_msg!("failed to get mutex");
         };
+        // RN I need this for debugging...
+        graph_node.name = ctx.span(id).map(|s| s.name()).unwrap_or("unknown span");
 
         state.unfinished_spans.insert(id.into_u64(), graph_node);
     }
@@ -243,6 +252,7 @@ where
             .started
             .map(|started| Instant::elapsed(&started))
             .unwrap_or_default();
+        // Q: why is the name assigned on finish and not on start?
         node.name = span.name();
 
         let parent = match span.parent() {
@@ -251,7 +261,10 @@ where
                     return err_msg!("failed to get parent node");
                 };
 
-                parent_node.child_nodes.push(node);
+                if self.config.aggregate_similar_siblings {
+                    node.summarize_children();
+                }
+                parent_node.push_node(node, self.config.aggregate_similar_siblings);
                 Some(p.id().clone())
             }
             None => {
@@ -308,6 +321,85 @@ struct GraphNode {
 }
 
 impl GraphNode {
+    fn is_equivalent(&self, other: &GraphNode) -> bool {
+        let base_same = self.name == other.name && self.metadata == other.metadata;
+        let children_same = self.child_nodes.len() == other.child_nodes.len()
+            && self
+                .child_nodes
+                .iter()
+                .zip(other.child_nodes.iter())
+                .all(|(a, b)| a.is_equivalent(b));
+        // Q: is all of 2 empty true?
+        // A: it is!
+        return base_same && children_same;
+    }
+
+    fn fold(&mut self, other: GraphNode) -> () {
+        // Replace start with the min start time if present
+        self.started = other
+            .started
+            .map(|s| self.started.map(|s0| s0.min(s)).unwrap_or(s))
+            .or(self.started);
+        self.execution_duration += other.execution_duration;
+        self.call_count += other.call_count;
+        self.events += &other.events;
+
+        // TODO reimplement as drain so I dont have to clone
+        for (i, left_node) in self.child_nodes.iter_mut().enumerate() {
+            if let Some(right_node) = other.child_nodes.get(i) {
+                if left_node.is_equivalent(right_node) {
+                    left_node.fold(right_node.clone());
+                } else {
+                    println!("This should not happen ... equivalence check should have failed.");
+                    left_node.child_nodes.push(right_node.clone());
+                }
+            }
+        }
+    }
+
+    fn summarize_children(&mut self) {
+        // In essence we check if any of out children are equivalent and if so we fold them
+        // together.
+        //
+        // we start with the first and just iterate over the rest.
+
+        let mut out = Vec::new();
+        let init_len = self.child_nodes.len();
+        while self.child_nodes.len() > 0 {
+            let mut node = self.child_nodes.pop().expect("should have node");
+            node.summarize_children();
+            let mut i = 0;
+            while i < self.child_nodes.len() {
+                if node.is_equivalent(&self.child_nodes[i]) {
+                    let other = self.child_nodes.remove(i);
+                    node.fold(other);
+                } else {
+                    i += 1;
+                }
+            }
+            out.push(node);
+            if out.len() > init_len {
+                // something is wrong, we should not be growing the number of nodes
+                break;
+            }
+        }
+        self.child_nodes = out;
+    }
+
+    fn push_node(&mut self, node: GraphNode, try_merge: bool) {
+        if try_merge {
+            for existing in self.child_nodes.iter_mut() {
+                if existing.is_equivalent(&node) {
+                    existing.fold(node);
+                    return;
+                }
+            }
+        }
+        self.child_nodes.push(node);
+    }
+}
+
+impl GraphNode {
     fn new(name: &'static str) -> Self {
         Self {
             name,
@@ -341,6 +433,9 @@ impl GraphNode {
     fn print(mut self, config: &Config) {
         if config.accumulate_events {
             self.accumulate_children_events(config.accumulate_spans_count);
+        }
+        if config.aggregate_similar_siblings {
+            self.summarize_children();
         }
 
         let tree = self.render_tree(self.execution_duration, config);
@@ -473,6 +568,13 @@ mod tests {
         std::{thread, time::Duration},
         tracing::{debug_span, event, Level},
     };
+
+    #[test]
+    fn test_summarize_nodes() {
+        // TODO:Add test for aggregation of nodes ...
+        use std::time::Duration;
+        let mut root = GraphNode::new("root");
+    }
 
     #[test]
     fn test_incremental_events_counts() {
