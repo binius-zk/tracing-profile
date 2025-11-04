@@ -4,29 +4,45 @@
 ///
 /// The name of the event is `max rss mib`.
 pub fn emit_max_rss() {
-    if let Some(max_rss) = get_max_rss() {
-        let max_rss_mb = if cfg!(target_os = "linux") {
-            // The maxrss is in kbytes for Linux.
-            max_rss / 1024
-        } else if cfg!(target_os = "macos") {
-            // ... and in bytes for BSD/macOS.
-            max_rss / 1024 / 1024
-        } else {
-            // don't risk confusing.
-            0
-        };
+    #[cfg(unix)]
+    let max_rss_mb = {
+        use nix::sys::resource;
+
+        resource::getrusage(resource::UsageWho::RUSAGE_SELF).map(|usage| {
+            usage.max_rss()
+                / if cfg!(target_os = "macos") {
+                    // ... the result is in bytes on macOS
+                    1024 * 1024
+                } else {
+                    // ... and in kilobytes on all other Unix systems
+                    1024
+                }
+        })
+    };
+
+    #[cfg(windows)]
+    let max_rss_mb = {
+        use std::mem::MaybeUninit;
+        use windows::Win32::System;
+
+        let mut counters = MaybeUninit::uninit();
+
+        unsafe {
+            System::ProcessStatus::GetProcessMemoryInfo(
+                System::Threading::GetCurrentProcess(),
+                counters.as_mut_ptr(),
+                size_of_val(&counters) as u32,
+            )
+            .map(|_| counters.assume_init().PeakWorkingSetSize / (1024 * 1024))
+        }
+    };
+
+    if let Ok(max_rss_mb) = max_rss_mb {
         tracing::event!(
             name: "max rss mib",
             tracing::Level::INFO,
             value = max_rss_mb,
             counter = true
         );
-    }
-    fn get_max_rss() -> Option<i64> {
-        use nix::sys::resource;
-
-        resource::getrusage(resource::UsageWho::RUSAGE_SELF)
-            .ok()
-            .map(|usage| usage.max_rss())
     }
 }
