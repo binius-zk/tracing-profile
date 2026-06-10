@@ -40,7 +40,6 @@ This is a Rust library implementing profiling layers for the `tracing` crate. Th
    - `PrintPerfCountersLayer`: Aggregates and prints performance counters (Linux only, requires `perf_counters` feature)
    - `PerfettoLayer`: Integrates with Perfetto tracing system (Linux, macOS, and Android, requires `perfetto` feature)
    - `IttApiLayer`: Intel VTune integration (requires `ittapi` feature)
-   - `TracyLayer`: Re-exported from `tracing-tracy` (requires `tracy` feature)
 
 2. **Data Structures** (`src/data/`): Core data management
    - Span metadata tracking and storage
@@ -63,7 +62,6 @@ This is a Rust library implementing profiling layers for the `tracing` crate. Th
 - `perf_counters`: Enables Linux performance counter support
 - `perfetto`: Enables Perfetto tracing integration
 - `ittapi`: Enables Intel VTune integration
-- `tracy`: Enables Tracy profiler integration
 - `panic`: Converts errors from eprintln! to panic!
 
 ### Testing Approach
