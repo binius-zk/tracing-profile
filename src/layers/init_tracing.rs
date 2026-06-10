@@ -32,9 +32,6 @@ pub enum Error {
     #[cfg(feature = "perfetto")]
     #[error("failed to initialize Perfetto: {0}")]
     Perfetto(#[from] perfetto_sys::Error),
-    #[cfg(feature = "perf_counters")]
-    #[error("failed to initialize PerfCounters: {0}")]
-    PerfCounters(#[from] std::io::Error),
     #[cfg(feature = "gen_filename")]
     #[error("failed to initialize filename builder: {0}")]
     FilenameBuilder(#[from] crate::filename_builder::FilenameBuilderError),
@@ -60,7 +57,6 @@ use filename_support::BuilderOption;
 /// - PrintTreeLayer (always enabled)
 /// - PerfettoLayer (if perfetto feature enabled)
 /// - IttApiLayer (if ittapi feature enabled)
-/// - PrintPerfCountersLayer (if perf_counters feature enabled)
 ///
 /// The builder parameter allows customization of perfetto trace filenames
 /// when the gen_filename feature is enabled.
@@ -100,23 +96,6 @@ fn init_tracing_internal(_builder: BuilderOption) -> Result<impl Drop, Error> {
         }
     };
 
-    // Add perf counters layer if feature is enabled
-    let (layer, guard) = {
-        cfg_if! {
-            if #[cfg(feature = "perf_counters")] {
-                (layer.with(
-                    crate::PrintPerfCountersLayer::new(vec![
-                        ("instructions".to_string(), crate::PerfHardwareEvent::INSTRUCTIONS.into()),
-                        ("cycles".to_string(), crate::PerfHardwareEvent::CPU_CYCLES.into()),
-                    ])?
-                    .with_env_filter(),
-                ), guard)
-            } else {
-                (layer, guard)
-            }
-        }
-    };
-
     // Try to initialize subscriber - OK if already set
     match layer.try_init() {
         Ok(()) => {
@@ -137,7 +116,6 @@ fn init_tracing_internal(_builder: BuilderOption) -> Result<impl Drop, Error> {
 /// The following layers are added:
 /// - `PrintTreeLayer` (added always)
 /// - `IttApiLayer` (added if feature `ittapi` is enabled)
-/// - `PrintPerfCountersLayer` (added if feature `perf_counters` is enabled)
 ///
 /// Returns the guard that should be kept alive for the duration of the program.
 pub fn init_tracing() -> Result<impl Drop, Error> {
