@@ -45,11 +45,11 @@ pub struct GitInfo {
 pub fn get_git_info() -> Option<GitInfo> {
     let repo = Repository::discover(".").ok()?;
     let head = repo.head().ok()?;
-    let branch = head.shorthand()?.to_string();
+    let branch = head.shorthand().ok()?.to_string();
     let commit = head.peel_to_commit().ok()?;
     let commit_short = commit.id().to_string()[..7].to_string();
-    let commit_message = commit.message().map(|m| m.trim().to_string());
-    let commit_author = commit.author().name().map(|s| s.to_string());
+    let commit_message = commit.message().ok().map(|m| m.trim().to_string());
+    let commit_author = commit.author().name().ok().map(|s| s.to_string());
 
     // Format the commit timestamp as ISO-8601
     let commit_time = {
