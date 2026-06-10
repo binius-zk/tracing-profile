@@ -5,7 +5,7 @@ name = "tracing-profile"
 authors = ["Irreducible Team <opensource@irreducible.com>"]
 description = "A span based profiler, utilizing the tracing crate"
 keywords = ["metrics", "profiling", "tracing"]
-license = "Apache-2.0"
+license = "Apache-2.0 OR MIT"
 readme = "README.md"
 repository = "https://github.com/IrreducibleOSS/tracing-profile"
 
