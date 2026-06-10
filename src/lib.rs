@@ -12,7 +12,6 @@
 //!     `PrintPerfCountersLayer`: prints aggregated performance counters for each span.
 //!     `PerfettoLayer`: uses a local or system-wide perfetto tracing service to record data.
 //!     `IttApiLayer`: logs data in Intel's [ITT API](https://www.intel.com/content/www/us/en/docs/vtune-profiler/user-guide/2023-1/instrumentation-and-tracing-technology-apis.html)
-//!     `TracyLayer`: re-exports the `tracing_tracy::TracyLayer`.
 //!
 //! `init_tracing` is a convenience function that initializes the tracing with the default values
 //! depending on the features enabled and environment variables set.
@@ -98,9 +97,6 @@ pub use {
 pub use layers::perfetto::{Layer as PerfettoLayer, PerfettoSettings as PerfettoCategorySettings};
 #[cfg(feature = "perfetto")]
 pub use perfetto_sys::PerfettoGuard;
-
-#[cfg(feature = "tracy")]
-pub use tracing_tracy::TracyLayer;
 
 #[cfg(feature = "gen_filename")]
 pub use filename_builder::{FilenameBuilderError, TraceFilenameBuilder};
