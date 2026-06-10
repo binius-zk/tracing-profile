@@ -1,0 +1,5 @@
+# Configuration for `typos`. See https://github.com/crate-ci/typos
+[files]
+# The vendored Perfetto SDK is a recursive git submodule; do not spell-check it.
+# Cargo.lock is generated.
+extend-exclude = ["perfetto-sys/cpp/perfetto/", "Cargo.lock"]

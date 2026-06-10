@@ -1,0 +1,41 @@
+# Configuration file for `prek`, a git hook framework written in Rust.
+# See https://prek.j178.dev for more information.
+#:schema https://www.schemastore.org/prek.json
+
+[[repos]]
+repo = "local"
+hooks = [
+  {
+    id = "copyright",
+    name = "Check copyright notices",
+    language = "system",
+    entry = "./scripts/check_copyright_notice.sh",
+    pass_filenames = false,
+    stages = ["pre-commit"]
+  },
+  {
+    id = "rustfmt",
+    name = "Run `rustfmt`",
+    types = ["rust"],
+    language = "system",
+    entry = "cargo fmt -- --check",
+    pass_filenames = false,
+    stages = ["pre-commit"]
+  },
+  {
+    id = "clippy",
+    name = "Run cargo clippy",
+    types = ["rust"],
+    language = "system",
+    entry = "cargo clippy --all --all-features --tests --benches --examples -- -D warnings",
+    pass_filenames = false,
+    stages = ["pre-push"]
+  }
+]
+
+[[repos]]
+repo = "https://github.com/crate-ci/typos"
+rev = "v1.32.0"
+hooks = [
+  { id = "typos" }
+]
