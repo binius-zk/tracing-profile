@@ -5,7 +5,7 @@
 #include "perfetto/sdk/perfetto.h"
 
 PERFETTO_DEFINE_CATEGORIES(
-    perfetto::Category("default").SetDescription("Default category fo the case when not specified.")
+    perfetto::Category("default").SetDescription("Default category for the case when not specified.")
 );
 
 
