@@ -17,7 +17,5 @@ pub use log_tree::LogTree;
 pub use span_metadata::*;
 #[cfg(feature = "ittapi")]
 pub use storage_utils::insert_to_span_storage;
-#[cfg(feature = "perf_counters")]
-pub use storage_utils::with_span_storage;
-#[cfg(any(feature = "perfetto", feature = "ittapi", feature = "perf_counters"))]
+#[cfg(any(feature = "perfetto", feature = "ittapi"))]
 pub use storage_utils::with_span_storage_mut;

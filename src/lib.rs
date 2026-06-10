@@ -9,7 +9,6 @@
 //!
 //! Multiple `Layer` implementations are provided:
 //!     `PrintTreeLayer`: prints a call graph
-//!     `PrintPerfCountersLayer`: prints aggregated performance counters for each span.
 //!     `PerfettoLayer`: uses a local or system-wide perfetto tracing service to record data.
 //!     `IttApiLayer`: logs data in Intel's [ITT API](https://www.intel.com/content/www/us/en/docs/vtune-profiler/user-guide/2023-1/instrumentation-and-tracing-technology-apis.html)
 //!
@@ -84,15 +83,6 @@ pub mod utils;
 pub use layers::graph::{Config as PrintTreeConfig, Layer as PrintTreeLayer};
 #[cfg(feature = "ittapi")]
 pub use layers::ittapi::Layer as IttApiLayer;
-#[cfg(feature = "perf_counters")]
-pub use layers::print_perf_counters::Layer as PrintPerfCountersLayer;
-#[cfg(feature = "perf_counters")]
-pub use {
-    perf_event::events::Cache as PerfCacheEvent, perf_event::events::Event as PerfEvent,
-    perf_event::events::Hardware as PerfHardwareEvent,
-    perf_event::events::Software as PerfSoftwareEvent,
-};
-
 #[cfg(feature = "perfetto")]
 pub use layers::perfetto::{Layer as PerfettoLayer, PerfettoSettings as PerfettoCategorySettings};
 #[cfg(feature = "perfetto")]

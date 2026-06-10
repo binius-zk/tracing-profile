@@ -16,7 +16,6 @@ gethostname = { version = "1.0.0", optional = true }
 git2 = { version = "0.20.1", default-features = false, optional = true }
 ittapi = { version = "0.4.0", optional = true }
 linear-map = "1.2.0"
-perf-event = { version = "0.4.8", optional = true }
 perfetto-sys = { package = "tracing-profile-perfetto-sys", version = "0.10.1", path = "perfetto-sys", optional = true }
 thiserror = "2.0.3"
 tracing = "0.1.37"
@@ -36,5 +35,4 @@ rusty-fork = "0.3.0"
 gen_filename = ["dep:chrono", "dep:gethostname", "dep:git2"]
 ittapi = ["dep:ittapi"]
 panic = []
-perf_counters = ["perf-event"]
 perfetto = ["dep:perfetto-sys", "gen_filename"]

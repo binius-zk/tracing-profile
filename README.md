@@ -13,11 +13,10 @@ the function arguments being included as fields.
 
 ## Usage
 
-The library exposes two layers that output the information in different ways.
+The library exposes several layers that output the information in different ways.
 
 ## Feature flags
  - `gen_filename` enables `TraceFilenameBuilder` for customizable trace filenames (automatically enabled with `perfetto`)
- - `perf_counters` enables `PrintPerfCountersLayer` layer. Currently performance counters work for Linux only.
  - `perfetto` enables Perfetto trace generation with customizable filenames
 
 ### PrintTreeLayer
@@ -32,32 +31,6 @@ root span [ 112.67µs | 100.00% ]
 └── child span2 [ 64.29µs | 57.06% ] { field2 = value2 }
    ├── child span3 [ 1.88µs | 1.66% ] { field3 = value3 }
    └── child span4 [ 1.67µs | 1.48% ] { field4 = value4 }
-```
-
-### PrintPerfCountersLayer
-
-The `PrintPerfCountersLayer` at the construction receives a vector of events (`perf_event::events::Event`) and their names. During execution for each span the number of the given events of each type is summed. The results are printed to the standard output in a form of a table.
-
-`perf_counters` crate feature enables this functionality.
-
-
-```
-$ cargo test -- --nocapture
-child span4:
-    instructions: 44142
-    cycles: 34398
-child span3:
-    instructions: 44132
-    cycles: 37674
-child span2:
-    instructions: 282256
-    cycles: 272064
-child span1:
-    instructions: 49107
-    cycles: 112554
-root span:
-    instructions: 661552
-    cycles: 738894
 ```
 
 ### IttApiLayer

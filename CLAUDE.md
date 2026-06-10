@@ -37,7 +37,6 @@ This is a Rust library implementing profiling layers for the `tracing` crate. Th
 
 1. **Layers** (`src/layers/`): Different profiling output implementations
    - `PrintTreeLayer`: Prints hierarchical span timing information
-   - `PrintPerfCountersLayer`: Aggregates and prints performance counters (Linux only, requires `perf_counters` feature)
    - `PerfettoLayer`: Integrates with Perfetto tracing system (Linux, macOS, and Android, requires `perfetto` feature)
    - `IttApiLayer`: Intel VTune integration (requires `ittapi` feature)
 
@@ -54,12 +53,10 @@ This is a Rust library implementing profiling layers for the `tracing` crate. Th
 - Each layer implements `tracing_subscriber::Layer<S>` trait
 - Layers track span timing using `on_new_span`, `on_enter`, `on_exit`, and `on_close` callbacks
 - Span relationships are tracked to build call graphs
-- Thread-local storage is used for performance counter tracking
 - Guards are used to ensure proper cleanup (e.g., `PerfettoGuard`)
 
 ### Feature Flags
 
-- `perf_counters`: Enables Linux performance counter support
 - `perfetto`: Enables Perfetto tracing integration
 - `ittapi`: Enables Intel VTune integration
 - `panic`: Converts errors from eprintln! to panic!
