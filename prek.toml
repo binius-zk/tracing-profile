@@ -29,7 +29,7 @@ hooks = [
     language = "system",
     entry = "cargo clippy --all --all-features --tests --benches --examples -- -D warnings",
     pass_filenames = false,
-    stages = ["pre-push"]
+    stages = ["manual", "pre-push"]
   }
 ]
 

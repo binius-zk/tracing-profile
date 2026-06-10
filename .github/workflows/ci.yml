@@ -2,8 +2,15 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:
@@ -20,24 +27,20 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
+      - name: Install prek
+        run: cargo install prek --version 0.4.4 --locked
 
-      - name: Copyrights check
-        run: ./scripts/check_copyright_notice.sh
+      - name: Check copyright
+        run: prek run copyright --all-files
 
-      - name: Check code is formatted
-        run: cargo fmt -- --check
+      - name: Check typos
+        run: prek run typos --all-files
+
+      - name: Check formatting
+        run: prek run rustfmt --all-files
 
       - name: Run Clippy
-        run: cargo clippy --all-features --tests --examples --benches -- -D warnings
+        run: prek run clippy --stage manual --all-files
 
   test:
     name: Run Tests
@@ -49,16 +52,6 @@ jobs:
 
       - name: Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.toml') }}
 
       - name: Run tests
         run: cargo test -- --nocapture
